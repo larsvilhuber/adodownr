@@ -134,9 +134,13 @@ compose_quarto_yaml <- function(
     # populate/delete articles navbar entry as a function of articles found
     # determine whether package has articles
     path_articles <- fs::path(pkg_dir, "src", "vignettes")
-    n_articles <- fs::dir_ls(path_articles, regexp = "\\.md") |>
-        stringr::str_subset(pattern = "README", negate = TRUE) |>
-        length()
+    n_articles <- if (fs::dir_exists(path_articles)) {
+        fs::dir_ls(path_articles, regexp = "\\.md") |>
+            stringr::str_subset(pattern = "README", negate = TRUE) |>
+            length()
+    } else {
+        0
+    }
     has_articles <- n_articles > 0
 
     # if there are articles, create articles entry in navbar
