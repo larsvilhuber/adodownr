@@ -98,12 +98,15 @@ get_cmd_short_desc <- function(file) {
 #' - Composes and writes a Quarto YAML file, implementing an opinionated
 #' layout and feeding forward some package and assets into relevant
 #' places
-#' - Opens a preview of the Quarto documentation website
+#' - Optionally opens a preview of the Quarto documentation website
 #'
-#' @param pkg_dir Charcter. Directory of the source package.
-#' @param site_dir Charcter. Directory of the target site.
+#' @param pkg_dir Character. Directory of the source package.
+#' @param site_dir Character. Directory of the target site.
 #' @param rm_old_site_dir Boolean. If `TRUE`, delete old site. Otherwise, keep
 #' but overwrite same-named files.
+#' @param preview Boolean. If `TRUE`, open a preview of the site after building.
+#' Defaults to `FALSE`. Preview is always skipped when running in a CI
+#' environment (i.e., when the `CI` environment variable is set).
 #'
 #' @importFrom fs file_move path file_exists dir_ls file_copy path_file dir_exists
 #' @importFrom quarto quarto_path quarto_preview
@@ -112,7 +115,8 @@ get_cmd_short_desc <- function(file) {
 build_site <- function(
     pkg_dir,
     site_dir,
-    rm_old_site_dir = FALSE
+    rm_old_site_dir = FALSE,
+    preview = FALSE
 ) {
 
     # TODO: check that pkg has expected folder structure
@@ -251,14 +255,21 @@ build_site <- function(
         con = quarto_yaml_path
     )
 
-    # check that Quarto installed
-    quarto_installed <- !is.null(quarto::quarto_path())
+    # preview site, if requested and not running in CI
+    is_ci <- nzchar(Sys.getenv("CI"))
+    if (preview && !is_ci) {
 
-    # preview site
-    if (quarto_installed) {
-        quarto::quarto_preview(file = fs::path(site_dir, "index.qmd"))
-    } else {
-        warning("Quarto not installed.")
+        # check that Quarto installed
+        quarto_installed <- !is.null(quarto::quarto_path())
+
+        if (quarto_installed) {
+            quarto::quarto_preview(file = fs::path(site_dir, "index.qmd"))
+        } else {
+            warning("Quarto not installed.")
+        }
+
+    } else if (preview && is_ci) {
+        message("Skipping preview: running in CI environment.")
     }
 
 }
